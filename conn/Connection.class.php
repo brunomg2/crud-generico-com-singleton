@@ -1,5 +1,5 @@
 <?php
-class Conexion {
+class Connection {
     private static $conexion;
     private static $instance;
     private static $data;
@@ -19,7 +19,7 @@ class Conexion {
         $dsn = "{$this->getConfig('db')}:dbname={$this->getConfig('dbname')};host={$this->getConfig('host')}";
         $charset = [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8'];
         try{
-            self::$conexion = new PDO($dsn,'root','',$charset);
+            self::$conexion = new PDO($dsn,$this->getConfig('user'),$this->getConfig('password'),$charset);
         }catch(PDOException $e){
             echo "Error: {$e->getMessage()}";
         }

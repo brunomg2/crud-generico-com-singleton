@@ -39,7 +39,7 @@ class Crud {
     }
 
     private function getConn() {
-        $this->conexion = Conexion::getInstance();
+        $this->conexion = Connection::getInstance();
         $this->conexion = $this->conexion->getConn();
         return $this->conexion;
     }

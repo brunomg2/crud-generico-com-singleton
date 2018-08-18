@@ -1,5 +1,5 @@
 <?php
-require_once 'conn/Conexion.class.php';
+require_once 'conn/Connection.class.php';
 require_once 'conn/Crud.class.php';
 
 $p1 = new Crud;
