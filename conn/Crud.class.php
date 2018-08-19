@@ -8,11 +8,11 @@ class Crud {
     private $table;
     private $terms;
     private $data;
-
+  
     public function create($table, array $data) {
         $this->table = (string) $table;
         $this->data = $data;
-        $this->prepare('create');
+        $this->prepareData('create');
     }
 
     public function read($table, $terms = NUll, $parseString = NULL) {
@@ -21,9 +21,9 @@ class Crud {
         if(!empty($parseString)):
             $this->parseString = (string) $parseString ? $parseString : NULL;
             parse_str($parseString, $this->parseString);
-            $this->prepare('read');
+            $this->prepareData('read');
         else:
-            $this->prepare('read');
+            $this->prepareData('read');
         endif;
     }
 
@@ -32,10 +32,27 @@ class Crud {
         if(!empty($parseString)):
             $this->parseString = (string) $parseString ? $parseString : NULL;
             parse_str($parseString,$this->parseString);
-            $this->prepare('read');
+            $this->prepareData('read');
         else:
-            $this->prepare('read');
+            $this->prepareData('read');
         endif;
+    }
+
+    public function update($table,$terms,array $data,$parseString) {
+        $this->table = (string) $table;
+        $this->terms = (string)$terms;
+        $this->data = $data;
+        $this->parseString = (string) $parseString;
+        parse_str($parseString,$this->parseString);
+        $this->prepareData('update');
+    }
+
+    public function delete($table,$terms,$parseString) {
+        $this->table = (string) $table;
+        $this->terms = (string)$terms;
+        $this->parseString = (string) $parseString;
+        parse_str($parseString,$this->parseString);
+        $this->prepareData('delete');
     }
 
     public function getResult() {
@@ -43,10 +60,6 @@ class Crud {
     }
     public function getError() {
         return $this->error;
-    }
-
-    public function getId() {
-        return $this->data;
     }
 
     //PRIVATES METHODS
@@ -63,7 +76,7 @@ class Crud {
                 if(empty($this->query)):
                     $this->query = "SELECT * FROM {$this->table} {$this->terms}";
                 endif;
-                break;
+            break;
 
             case 'create':
                 $this->parseString = '';
@@ -77,19 +90,38 @@ class Crud {
                 $this->parseString = substr($this->parseString, 0, -2);
                 $this->terms = substr($this->terms, 0, -2);
                 $this->query = "INSERT INTO {$this->table} ($this->parseString) VALUES ($this->terms)";
-                break;
+            break;
+
+            case 'update':
+                $bind = '';
+                foreach($this->data as $key => $values):
+                    $bind .= "{$key} = :{$key}, ";
+                endforeach;
+                $bind= substr($bind, 0, -2);
+                $this->query = "UPDATE {$this->table} SET $bind {$this->terms}";
+            break;
+
+            case 'delete':
+                $this->query = "DELETE FROM {$this->table} {$this->terms}";
+            break;
         endswitch;
     }
 
-    private function setBinds(array $dados) {
-        foreach($dados as $key => $value):
-            $this->query->bindValue(":{$key}",$value, (is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR));
-        endforeach;
+    private function setBinds(array $dados,array $parseString = NULL) {
+        if(!empty($parseString)):
+            $this->data = array_merge($this->data,$this->parseString);
+            foreach($this->data as $key => $value):
+                $this->query->bindValue(":{$key}",$value, (is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR));
+            endforeach;
+        else:
+            foreach($dados as $key => $value):
+                $this->query->bindValue(":{$key}",$value, (is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR));
+            endforeach;
+        endif;
     }
 
     private function execute() {
-        $this->query->execute();
-        
+        $this->query->execute(); 
         if($this->query->rowCount() > 0):
             $this->result = $this->query->fetchAll();
             $this->error = FALSE;
@@ -97,21 +129,19 @@ class Crud {
             $this->result = NULL;
             $this->error = TRUE;
         endif;
-
-        $this->data = $this->getConn()->lastInsertId();
     }
 
-    private function prepare($type) {
+    private function prepareData($type) {
         
         switch($type):
             case 'read':
                 if(!empty($this->parseString)):
-                    $this->getSyntax('read');
+                    $this->getSyntax($type);
                     $this->query = $this->getConn()->prepare($this->query);
                     $this->setBinds($this->parseString);
                     $this->execute();
                 else:
-                    $this->getSyntax('read');
+                    $this->getSyntax($type);
                     $this->query = $this->getConn()->query($this->query);
 
                     if($this->query->rowCount() > 0):
@@ -124,9 +154,21 @@ class Crud {
                 endif;
             break;
             case 'create':
-                $this->getSyntax('create');
+                $this->getSyntax($type);
                 $this->query = $this->getConn()->prepare($this->query);
                 $this->setBinds($this->data);
+                $this->execute();
+            break;
+            case 'update':
+                $this->getSyntax($type);
+                $this->query = $this->getConn()->prepare($this->query);
+                $this->setBinds($this->data,$this->parseString);
+                $this->execute();
+            break;
+            case 'delete':
+                $this->getSyntax($type);
+                $this->query = $this->getConn()->prepare($this->query);
+                $this->setBinds($this->parseString);
                 $this->execute();
             break;
         endswitch;
