@@ -16,14 +16,17 @@ class Connection {
     }
 
     public function getConn() {
-        $dsn = "{$this->getConfig('db')}:dbname={$this->getConfig('dbname')};host={$this->getConfig('host')}";
-        $charset = [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8'];
-        try{
-            self::$conexion = new PDO($dsn,$this->getConfig('user'),$this->getConfig('password'),$charset);
-        }catch(PDOException $e){
-            echo "Error: {$e->getMessage()}";
-        }
+        if(empty(self::$conexion):
+            $dsn = "{$this->getConfig('db')}:dbname={$this->getConfig('dbname')};host={$this->getConfig('host')}";
+            $charset = [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8'];
+            try{
+                self::$conexion = new PDO($dsn,$this->getConfig('user'),$this->getConfig('password'),$charset);
+            }catch(PDOException $e){
+                echo "Error: {$e->getMessage()}";
+            }   
+        endif;
         return self::$conexion;
+        
     }
 
     private function getConfig($key) {
